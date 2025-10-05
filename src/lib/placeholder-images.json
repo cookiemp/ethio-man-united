@@ -1,3 +1,28 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "news-1",
+      "description": "A view of the Old Trafford stadium from the outside.",
+      "imageUrl": "https://images.unsplash.com/photo-1434648957308-5e6a859697e8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxzdGFkaXVtJTIwZm9vdGJhbGx8ZW58MHx8fHwxNzU5NjE1NDUxfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "stadium football"
+    },
+    {
+      "id": "news-2",
+      "description": "A manager celebrating on the sidelines.",
+      "imageUrl": "https://images.unsplash.com/photo-1604651685068-8223d8790770?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxzb2NjZXIlMjBjb2FjaHxlbnwwfHx8fDE3NTk2NzQyMjF8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "soccer coach"
+    },
+    {
+      "id": "news-3",
+      "description": "Players celebrating a goal on the pitch.",
+      "imageUrl": "https://images.unsplash.com/photo-1586200486113-6102191cb3b2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxmb290YmFsbCUyMGNlbGVicmF0aW9ufGVufDB8fHx8MTc1OTY3NDIyMXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "football celebration"
+    },
+    {
+      "id": "news-4",
+      "description": "A player signing a new contract.",
+      "imageUrl": "https://images.unsplash.com/photo-1521791055366-0d553872125f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxjb250cmFjdCUyMHNpZ25pbmd8ZW58MHx8fHwxNzU5Njc0MjIyfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "contract signing"
+    }
+  ]
 }
