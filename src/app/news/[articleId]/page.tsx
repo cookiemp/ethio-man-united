@@ -76,14 +76,14 @@ function CommentForm({ articleId }: { articleId: string }) {
 
 // Page component is now async to handle params correctly.
 export default function NewsArticlePage({ params }: { params: { articleId: string } }) {
-  // `params` is now correctly accessed.
-  const article = newsArticles.find((a) => a.id === params.articleId);
+  const { articleId } = params;
+  const article = newsArticles.find((a) => a.id === articleId);
   const { firestore } = useFirebase();
 
   const commentsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return collection(firestore, 'news_articles', params.articleId, 'comments');
-  }, [firestore, params.articleId]);
+    return collection(firestore, 'news_articles', articleId, 'comments');
+  }, [firestore, articleId]);
   
   const { data: comments, isLoading: isLoadingComments } = useCollection<Comment>(commentsQuery);
 
@@ -161,7 +161,7 @@ export default function NewsArticlePage({ params }: { params: { articleId: strin
         </div>
 
         <h3 className="text-2xl font-bold font-headline mb-4">Leave a Comment</h3>
-        <CommentForm articleId={params.articleId} />
+        <CommentForm articleId={articleId} />
       </div>
     </div>
   );
