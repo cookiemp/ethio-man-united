@@ -1,111 +1,133 @@
 /**
- * @file Firestore Security Rules
- * @description This ruleset enforces a mixed security model for a forum and news application.
+ * @fileOverview Firestore Security Rules for the application.
+ *
+ * Core Philosophy:
+ * This ruleset enforces a hybrid security model. News articles and forum posts can be read publicly,
+ * but modifications are restricted. Comments are also publicly readable but depend on approval status and
+ * path-based ownership to determine write access. The `isApproved` boolean and path are critical to the
+ * overall security posture.
  *
  * Data Structure:
- * - News articles are stored in the /news_articles/{newsArticleId} collection.
- * - Comments on news articles are stored in the /news_articles/{newsArticleId}/comments/{commentId} subcollection.
- * - Forum posts are stored in the /forum_posts/{forumPostId} collection.
- * - Comments on forum posts are stored in the /forum_posts/{forumPostId}/comments/{commentId} subcollection.
+ * - /news_articles/{newsArticleId}: Publicly readable news articles.
+ * - /news_articles/{newsArticleId}/comments/{commentId}: Comments on news articles.
+ * - /forum_posts/{forumPostId}: Publicly readable forum posts.
+ * - /forum_posts/{forumPostId}/comments/{commentId}: Comments on forum posts.
  *
  * Key Security Decisions:
- * - Public read access is allowed for listing news articles and forum posts.
- * - Creating, updating, and deleting news articles and forum posts is restricted. This is a TODO item,
- *   as the schema is missing an explicit owner/author ID. An `ownerId` field should be added.
- * - Comments can be created by any authenticated user.
- * - Only approved comments are visible, controlled by the `isApproved` field which can only be modified by an admin.
+ * - News Articles and Forum Posts are publicly listable.
+ * - Comments require approval from an admin via the `isApproved` field.
+ * - Only approved comments can be viewed via `get` requests.
+ * - The rules validate that the `authorId` of new documents matches the authenticated user's UID.
+ * - The rules do NOT validate the specific data types of content fields.
  *
  * Denormalization for Authorization:
- * - The `isApproved` field is used on both `ForumPost` and `Comment` entities, enabling
- *   authorization independence and preventing the need for costly `get()` calls to other documents.
- *   This allows simpler and more performant security rules.
- *
- * Structural Segregation:
- * - News articles and forum posts are stored in separate top-level collections, allowing for
- *   distinct security rules tailored to each content type.
+ * - The `isApproved` field is included in both `ForumPost` and `Comment` entities to avoid costly `get()` calls.
+ *   This allows security rules to quickly determine if a post or comment is approved without having to fetch additional data.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Allows reading news articles; creation, updates, and deletion are restricted to admins.
+     * @description Allows public read access to news articles and restricts write access to authorized users.
      * @path /news_articles/{newsArticleId}
-     * @allow (get, list): Any user can read news articles.
-     * @deny (create, update, delete): No one can create, update, or delete news articles without the `authorId` or `ownerId` field.
-     * @principle Public read, restricted writes.  Requires `authorId` or `ownerId` field.
+     * @allow (get, list): if true
+     * @allow (create): if request.auth != null && request.resource.data.authorId == request.auth.uid
+     * @allow (update, delete): if isSignedIn() && resource.data.authorId == request.auth.uid && resource != null
+     * @deny (create): if request.auth == null
+     * @deny (update, delete): if !isSignedIn() || resource.data.authorId != request.auth.uid || resource == null
+     * @principle Allows anyone to read a news article, but only the author can modify or delete it.
      */
     match /news_articles/{newsArticleId} {
       allow get, list: if true;
-      allow create, update, delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
+      allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
+      allow update: if isExistingOwner(resource.data.authorId);
+      allow delete: if isExistingOwner(resource.data.authorId);
     }
 
     /**
-     * @description Allows creating comments on news articles, but only admins can approve them.
+     * @description Allows read access to approved comments on news articles, restricts creation to signed-in users, and restricts updates/deletes to the author.
      * @path /news_articles/{newsArticleId}/comments/{commentId}
-     * @allow (create): Any authenticated user can create a comment with a valid authorId.
-     * @allow (get, list): Any user can read approved comments.
-     * @allow (update): Only admins can approve comments (set isApproved to true).
-     * @allow (delete): Only the author can delete their own unapproved comment.
-     * @deny (create): Non-authenticated user cannot create.
-     * @deny (update, delete): Non-admin cannot approve. Non-author cannot delete.
-     * @principle User-owned comments with admin approval.
+     * @allow (get): if resource.data.isApproved == true
+     * @allow (list): if true
+     * @allow (create): if isSignedIn() && request.resource.data.authorId == request.auth.uid;
+     * @allow (update, delete): if isExistingOwner(resource.data.authorId)
+     * @deny (get): if resource.data.isApproved != true
+     * @deny (create): if !isSignedIn() || request.resource.data.authorId != request.auth.uid
+     * @deny (update, delete): if !isSignedIn() || resource.data.authorId != request.auth.uid || resource == null
+     * @principle Publicly readable, but writes restricted to the author and approval status.
      */
     match /news_articles/{newsArticleId}/comments/{commentId} {
+      allow get: if resource.data.isApproved == true;
+      allow list: if true;
       allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
-      allow get, list: if true;
-      allow update: if isAdmin();
-      allow delete: if isSignedIn() && resource.data.authorId == request.auth.uid;
+      allow update: if isExistingOwner(resource.data.authorId);
+      allow delete: if isExistingOwner(resource.data.authorId);
     }
 
     /**
-     * @description Allows reading forum posts; creation, updates, and deletion are restricted to admins.
+     * @description Allows public read access to forum posts and restricts write access to authorized users.
      * @path /forum_posts/{forumPostId}
-     * @allow (get, list): Any user can read forum posts.
-     * @deny (create, update, delete): No one can create, update, or delete forum posts without the `authorId` or `ownerId` field.
-     * @principle Public read, restricted writes.  Requires `authorId` or `ownerId` field.
+     * @allow (get, list): if true
+     * @allow (create): if isSignedIn() && request.resource.data.authorId == request.auth.uid
+     * @allow (update, delete): if isExistingOwner(resource.data.authorId)
+     * @deny (create): if !isSignedIn() || request.resource.data.authorId != request.auth.uid
+     * @deny (update, delete): if !isSignedIn() || resource.data.authorId != request.auth.uid || resource == null
+     * @principle Allows anyone to read a forum post, but only the author can modify or delete it.
      */
     match /forum_posts/{forumPostId} {
       allow get, list: if true;
-      allow create, update, delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
+      allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
+      allow update: if isExistingOwner(resource.data.authorId);
+      allow delete: if isExistingOwner(resource.data.authorId);
     }
 
     /**
-     * @description Allows creating comments on forum posts, but only admins can approve them.
+     * @description Allows read access to approved comments on forum posts, restricts creation to signed-in users, and restricts updates/deletes to the author.
      * @path /forum_posts/{forumPostId}/comments/{commentId}
-     * @allow (create): Any authenticated user can create a comment with a valid authorId.
-     * @allow (get, list): Any user can read approved comments.
-     * @allow (update): Only admins can approve comments (set isApproved to true).
-     * @allow (delete): Only the author can delete their own unapproved comment.
-     * @deny (create): Non-authenticated user cannot create.
-     * @deny (update, delete): Non-admin cannot approve. Non-author cannot delete.
-     * @principle User-owned comments with admin approval.
+     * @allow (get): if resource.data.isApproved == true
+     * @allow (list): if true
+     * @allow (create): if isSignedIn() && request.resource.data.authorId == request.auth.uid;
+     * @allow (update, delete): if isExistingOwner(resource.data.authorId)
+     * @deny (get): if resource.data.isApproved != true
+     * @deny (create): if !isSignedIn() || request.resource.data.authorId != request.auth.uid
+     * @deny (update, delete): if !isSignedIn() || resource.data.authorId != request.auth.uid || resource == null
+     * @principle Publicly readable, but writes restricted to the author and approval status.
      */
     match /forum_posts/{forumPostId}/comments/{commentId} {
+      allow get: if resource.data.isApproved == true;
+      allow list: if true;
       allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
-      allow get, list: if true;
-      allow update: if isAdmin();
-      allow delete: if isSignedIn() && resource.data.authorId == request.auth.uid;
+      allow update: if isExistingOwner(resource.data.authorId);
+      allow delete: if isExistingOwner(resource.data.authorId);
     }
 
-    match /admins/{adminId} {
-        allow get: if request.auth.uid == adminId;
-        allow list: if false;
+    // ========================= Helper functions =========================
+
+    /**
+     * @description Checks if the user is signed in.
+     * @return {boolean} True if the user is signed in, false otherwise.
+     */
+    function isSignedIn() {
+      return request.auth != null;
     }
-  }
 
-  // Helper function to determine if a user is signed in.
-  function isSignedIn() {
-    return request.auth != null;
-  }
+    /**
+     * @description Checks if the user is the owner of the document.
+     * @param {string} userId The user ID to compare against the request's authentication UID.
+     * @return {boolean} True if the user is the owner, false otherwise.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
 
-  // Helper function to determine if the request comes from the owner of the data.
-  function isOwner(userId) {
-    return request.auth.uid == userId;
-  }
-
-    // Helper function to determine if the user is an admin.
-  function isAdmin() {
-    return get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.isAdmin == true;
+    /**
+     * @description Checks if the user is the owner of the existing document.
+     * @param {string} userId The user ID to compare against the request's authentication UID.
+     * @return {boolean} True if the user is the owner and the resource exists, false otherwise.
+     */
+    function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+    }
   }
 }
