@@ -1,3 +1,5 @@
+'use client';
+
 import { newsArticles } from '@/lib/mock-data';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
@@ -7,14 +9,89 @@ import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CalendarIcon, UserIcon } from 'lucide-react';
+import { CalendarIcon, User as UserIcon } from 'lucide-react';
+import { useCollection, useFirebase, useUser, useMemoFirebase } from '@/firebase';
+import { collection, serverTimestamp } from 'firebase/firestore';
+import React, { useState } from 'react';
+import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
+import type { Comment } from '@/lib/mock-data';
+
+function CommentForm({ articleId }: { articleId: string }) {
+  const { firestore, auth } = useFirebase();
+  const { user, isUserLoading } = useUser();
+  const [comment, setComment] = useState('');
+
+  const handleSignIn = () => {
+    initiateAnonymousSignIn(auth);
+  };
+
+  const handleSubmitComment = () => {
+    if (!firestore || !user || !comment.trim()) return;
+
+    const commentsRef = collection(firestore, 'news_articles', articleId, 'comments');
+    addDocumentNonBlocking(commentsRef, {
+      content: comment,
+      authorId: user.uid,
+      author: user.isAnonymous ? 'Anonymous Fan' : user.displayName || 'Fan',
+      createdAt: serverTimestamp(),
+      isApproved: false,
+    });
+    setComment('');
+  };
+
+  if (isUserLoading) {
+    return <p>Loading...</p>;
+  }
+
+  if (!user) {
+    return (
+      <Card>
+        <CardContent className="pt-6 flex flex-col items-center justify-center text-center">
+          <p className="mb-4">You need to be signed in to leave a comment.</p>
+          <Button onClick={handleSignIn}>Sign in Anonymously</Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardContent className="pt-6">
+        <Textarea 
+          placeholder="Write your comment here..." 
+          rows={5} 
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+        />
+      </CardContent>
+      <CardFooter>
+        <Button onClick={handleSubmitComment} disabled={!comment.trim()}>Submit Comment</Button>
+      </CardFooter>
+    </Card>
+  );
+}
 
 export default function NewsArticlePage({ params }: { params: { articleId: string } }) {
   const article = newsArticles.find((a) => a.id === params.articleId);
+  const { firestore } = useFirebase();
+
+  const commentsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return collection(firestore, 'news_articles', params.articleId, 'comments');
+  }, [firestore, params.articleId]);
+  
+  const { data: comments, isLoading: isLoadingComments } = useCollection<Comment>(commentsQuery);
 
   if (!article) {
     notFound();
   }
+  
+  const sortedComments = comments?.sort((a, b) => {
+    const aDate = (a.createdAt as any)?.toDate?.() || 0;
+    const bDate = (b.createdAt as any)?.toDate?.() || 0;
+    return bDate - aDate;
+  });
 
   return (
     <div className="max-w-4xl mx-auto animate-fade-in-up">
@@ -50,20 +127,23 @@ export default function NewsArticlePage({ params }: { params: { articleId: strin
       <Separator />
 
       <div className="mt-12">
-        <h2 className="text-3xl font-bold font-headline mb-6">Comments ({article.comments.length})</h2>
+        <h2 className="text-3xl font-bold font-headline mb-6">Comments ({comments?.length || 0})</h2>
         <div className="space-y-6 mb-8">
-          {article.comments.map((comment) => (
-            <Card key={comment.id} className={comment.status === 'pending' ? 'bg-muted/50' : ''}>
+          {isLoadingComments && <p>Loading comments...</p>}
+          {sortedComments && sortedComments.map((comment) => (
+            <Card key={comment.id} className={!comment.isApproved ? 'bg-muted/50' : ''}>
               <CardHeader className="flex flex-row items-start gap-4 pb-2">
                 <Avatar>
-                  <AvatarFallback>{comment.author.charAt(0)}</AvatarFallback>
+                  <AvatarFallback>{(comment.author || 'A').charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div>
                   <div className="flex items-center gap-2">
-                    <CardTitle className="text-base font-semibold">{comment.author}</CardTitle>
-                    {comment.status === 'pending' && <Badge variant="secondary">Pending</Badge>}
+                    <CardTitle className="text-base font-semibold">{comment.author || 'Anonymous'}</CardTitle>
+                    {!comment.isApproved && <Badge variant="secondary">Pending</Badge>}
                   </div>
-                  <CardDescription className="text-xs">{new Date(comment.date).toLocaleString()}</CardDescription>
+                  <CardDescription className="text-xs">
+                    {(comment.createdAt as any)?.toDate?.().toLocaleString() || 'Just now'}
+                  </CardDescription>
                 </div>
               </CardHeader>
               <CardContent>
@@ -71,20 +151,13 @@ export default function NewsArticlePage({ params }: { params: { articleId: strin
               </CardContent>
             </Card>
           ))}
-          {article.comments.length === 0 && (
+          {!isLoadingComments && comments?.length === 0 && (
             <p className="text-muted-foreground">Be the first to comment on this article.</p>
           )}
         </div>
 
         <h3 className="text-2xl font-bold font-headline mb-4">Leave a Comment</h3>
-        <Card>
-          <CardContent className="pt-6">
-            <Textarea placeholder="Write your comment here..." rows={5} />
-          </CardContent>
-          <CardFooter>
-            <Button>Submit Comment</Button>
-          </CardFooter>
-        </Card>
+        <CommentForm articleId={params.articleId} />
       </div>
     </div>
   );

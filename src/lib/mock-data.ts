@@ -1,3 +1,5 @@
+import { Timestamp } from "firebase/firestore";
+
 export type NewsArticle = {
   id: string;
   headline: string;
@@ -38,10 +40,13 @@ export type ForumTopic = {
 export type Comment = {
   id: string;
   author: string;
+  authorId: string;
   content: string;
-  date: string;
-  status: 'pending' | 'approved';
-  source: string; // e.g., "News: Article Headline" or "Forum: Topic Title"
+  createdAt: Timestamp | Date;
+  isApproved: boolean;
+  status?: 'pending' | 'approved'; // Optional for local data consistency
+  source?: string; // Optional for local data consistency
+  date?: string; // Optional for local data consistency
 };
 
 export const newsArticles: NewsArticle[] = [
@@ -53,9 +58,7 @@ export const newsArticles: NewsArticle[] = [
     story: 'In a breathtaking finish at Old Trafford, Manchester United clinched a vital three points with a goal in the 93rd minute. The crowd erupted as the ball hit the back of the net, sealing a 2-1 victory and keeping their title hopes alive. The manager praised the team\'s resilience and fighting spirit in the post-match interview.',
     author: 'Admin',
     date: '2024-05-10',
-    comments: [
-      { id: 'c1', author: 'Fan123', content: 'What a game! I was on the edge of my seat!', date: '2024-05-10', status: 'approved', source: 'United Secure Dramatic Last-Minute Winner' },
-    ],
+    comments: [],
   },
   {
     id: '2',
@@ -75,10 +78,7 @@ export const newsArticles: NewsArticle[] = [
     story: 'Manchester United has received the green light to proceed with the expansion of Old Trafford. The project will see the capacity increase by 15,000, bringing the total to just over 90,000. Work is expected to begin at the end of the season and will be completed in phases over the next three years.',
     author: 'Admin',
     date: '2024-05-08',
-    comments: [
-      { id: 'c2', author: 'Red_Devil_88', content: 'This is amazing news! More fans to cheer on the boys!', date: '2024-05-08', status: 'approved', source: 'Old Trafford Expansion Plans Approved' },
-      { id: 'c3', author: 'Utd4Life', content: 'Can\'t wait to see the new stand!', date: '2024-05-08', status: 'pending', source: 'Old Trafford Expansion Plans Approved' },
-    ],
+    comments: [],
   },
 ];
 
@@ -93,7 +93,7 @@ export const matches: Match[] = [
   // Fixtures
   { id: 'm4', homeTeam: 'Manchester City', awayTeam: 'Manchester United', date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), competition: 'Premier League', status: 'fixture' },
   { id: 'm5', homeTeam: 'Manchester United', awayTeam: 'Liverpool', date: new Date(Date.now() + 12 * 24 * 60 * 60 * 1000).toISOString(), competition: 'FA Cup Final', status: 'fixture' },
-  { id: 'm6', homeTeam: 'Brighton', awayTeam: 'Manchester United', date: new Date(Date.now() + 18 * 24 * 60 * 60 * 1000).toISOString(), competition: 'Premier League', status: 'fixture' },
+  { id: 'm6', homeTeam: 'Brighton', awayTeam: 'Manchester United', date: new date(Date.now() + 18 * 24 * 60 * 60 * 1000).toISOString(), competition: 'Premier League', status: 'fixture' },
 ];
 
 export const forumTopics: ForumTopic[] = [
@@ -119,7 +119,7 @@ export const forumTopics: ForumTopic[] = [
   },
 ];
 
-export const allComments: Comment[] = [
+export const allComments: Omit<Comment, 'createdAt' | 'authorId' | 'isApproved'>[] = [
   { id: 'c1', author: 'Fan123', content: 'What a game! I was on the edge of my seat!', date: '2024-05-10', status: 'approved', source: 'News: United Secure Dramatic Last-Minute Winner' },
   { id: 'c2', author: 'Red_Devil_88', content: 'This is amazing news! More fans to cheer on the boys!', date: '2024-05-08', status: 'approved', source: 'News: Old Trafford Expansion Plans Approved' },
   { id: 'c3', author: 'Utd4Life', content: 'Can\'t wait to see the new stand!', date: '2024-05-08', status: 'pending', source: 'News: Old Trafford Expansion Plans Approved' },
