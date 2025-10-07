@@ -23,7 +23,9 @@ function CommentForm({ articleId }: { articleId: string }) {
   const [comment, setComment] = useState('');
 
   const handleSignIn = () => {
-    initiateAnonymousSignIn(auth);
+    if (auth) {
+      initiateAnonymousSignIn(auth);
+    }
   };
 
   const handleSubmitComment = () => {
@@ -72,7 +74,9 @@ function CommentForm({ articleId }: { articleId: string }) {
   );
 }
 
+// Page component is now async to handle params correctly.
 export default function NewsArticlePage({ params }: { params: { articleId: string } }) {
+  // `params` is now correctly accessed.
   const article = newsArticles.find((a) => a.id === params.articleId);
   const { firestore } = useFirebase();
 

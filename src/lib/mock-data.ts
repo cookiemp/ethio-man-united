@@ -93,7 +93,7 @@ export const matches: Match[] = [
   // Fixtures
   { id: 'm4', homeTeam: 'Manchester City', awayTeam: 'Manchester United', date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), competition: 'Premier League', status: 'fixture' },
   { id: 'm5', homeTeam: 'Manchester United', awayTeam: 'Liverpool', date: new Date(Date.now() + 12 * 24 * 60 * 60 * 1000).toISOString(), competition: 'FA Cup Final', status: 'fixture' },
-  { id: 'm6', homeTeam: 'Brighton', awayTeam: 'Manchester United', date: new date(Date.now() + 18 * 24 * 60 * 60 * 1000).toISOString(), competition: 'Premier League', status: 'fixture' },
+  { id: 'm6', homeTeam: 'Brighton', awayTeam: 'Manchester United', date: new Date(Date.now() + 18 * 24 * 60 * 60 * 1000).toISOString(), competition: 'Premier League', status: 'fixture' },
 ];
 
 export const forumTopics: ForumTopic[] = [
