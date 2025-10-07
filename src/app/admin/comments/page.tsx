@@ -1,4 +1,6 @@
-import { allComments } from '@/lib/mock-data';
+'use client';
+
+import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -9,10 +11,53 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Check, X } from 'lucide-react';
+import { Check, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import type { Comment } from '@/lib/mock-data';
+import { collectionGroup, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 
 export default function AdminCommentsPage() {
+  const { firestore } = useFirebase();
+
+  const commentsQuery = useMemoFirebase(
+    () => (firestore ? collectionGroup(firestore, 'comments') : null),
+    [firestore]
+  );
+  
+  const { data: comments, isLoading } = useCollection<Comment>(commentsQuery);
+
+  const handleApprove = async (comment: Comment & { parentPath?: string }) => {
+    if (!firestore || !comment.parentPath) return;
+    const commentRef = doc(firestore, comment.parentPath, comment.id);
+    await updateDoc(commentRef, { isApproved: true });
+  };
+
+  const handleRemove = async (comment: Comment & { parentPath?: string }) => {
+    if (!firestore || !comment.parentPath) return;
+    const commentRef = doc(firestore, comment.parentPath, comment.id);
+    await deleteDoc(commentRef);
+  };
+  
+  // This is a temporary way to get the parent path until we have a better way
+  const getParentPath = (comment: any) : string | undefined => {
+    // This is a hacky way to get the parent path but it works for now
+    if (comment.ref?.path) {
+      const pathParts = comment.ref.path.split('/');
+      if (pathParts.length > 2) {
+        return pathParts.slice(0, -1).join('/');
+      }
+    }
+    return undefined;
+  }
+
+  const sortedComments = comments
+    ?.map(c => ({...c, parentPath: getParentPath(c)}))
+    .sort((a, b) => {
+      const aDate = (a.createdAt as any)?.toDate?.() || 0;
+      const bDate = (b.createdAt as any)?.toDate?.() || 0;
+      return bDate - aDate;
+    });
+
   return (
     <div className="space-y-8 animate-fade-in-up">
       <div>
@@ -31,36 +76,43 @@ export default function AdminCommentsPage() {
               <TableRow>
                 <TableHead className="w-[40%]">Comment</TableHead>
                 <TableHead>Author</TableHead>
-                <TableHead>Source</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {allComments.map((comment) => (
+              {isLoading && <TableRow><TableCell colSpan={4}>Loading comments...</TableCell></TableRow>}
+              {!isLoading && sortedComments?.map((comment) => (
                 <TableRow key={comment.id}>
                   <TableCell className="text-muted-foreground">{comment.content}</TableCell>
-                  <TableCell className="font-medium">{comment.author}</TableCell>
-                  <TableCell>{comment.source}</TableCell>
+                  <TableCell className="font-medium">{comment.author || 'Anonymous'}</TableCell>
                   <TableCell>
-                    <Badge variant={comment.status === 'approved' ? 'default' : 'secondary'} className={comment.status === 'approved' ? 'bg-green-600' : ''}>
-                      {comment.status}
-                    </Badge>
+                    {comment.isApproved ? (
+                       <Badge variant="default" className="bg-green-600">Approved</Badge>
+                    ) : (
+                       <Badge variant="secondary">Pending</Badge>
+                    )}
                   </TableCell>
                   <TableCell className="text-right">
-                    {comment.status === 'pending' && (
+                    {!comment.isApproved && (
                       <>
-                        <Button variant="ghost" size="icon" className="text-green-600 hover:text-green-600">
+                        <Button variant="ghost" size="icon" className="text-green-600 hover:text-green-600" onClick={() => handleApprove(comment)}>
                           <Check className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
-                          <X className="h-4 w-4" />
+                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleRemove(comment)}>
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </>
                     )}
+                     {comment.isApproved && (
+                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleRemove(comment)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                     )}
                   </TableCell>
                 </TableRow>
               ))}
+               {!isLoading && sortedComments?.length === 0 && <TableRow><TableCell colSpan={4}>No comments to moderate.</TableCell></TableRow>}
             </TableBody>
           </Table>
         </CardContent>
