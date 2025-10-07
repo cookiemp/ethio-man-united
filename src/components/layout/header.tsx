@@ -6,10 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Logo } from "@/components/icons/logo";
 import { cn } from "@/lib/utils";
-import { Menu, Newspaper, Calendar, MessagesSquare, Shield } from "lucide-react";
+import { Menu, Newspaper, Calendar, MessagesSquare, Shield, Home as HomeIcon } from "lucide-react";
 
 const navLinks = [
-  { href: "/", label: "News", icon: Newspaper },
+  { href: "/", label: "Home", icon: HomeIcon },
+  { href: "/news", label: "News", icon: Newspaper },
   { href: "/fixtures", label: "Fixtures", icon: Calendar },
   { href: "/forum", label: "Forum", icon: MessagesSquare },
   { href: "/admin", label: "Admin", icon: Shield },
