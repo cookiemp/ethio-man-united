@@ -17,7 +17,7 @@ export type Match = {
   awayScore?: number;
   date: string;
   competition: string;
-  status: 'result' | 'fixture';
+  status: 'result' | 'fixture' | 'live';
 };
 
 export type ForumPost = {
@@ -83,15 +83,17 @@ export const newsArticles: NewsArticle[] = [
 ];
 
 export const matches: Match[] = [
+  // Live Match
+  { id: 'm-live', homeTeam: 'Manchester United', awayTeam: 'Liverpool', homeScore: 1, awayScore: 1, date: new Date().toISOString(), competition: 'Premier League', status: 'live' },
   // Results
   { id: 'm1', homeTeam: 'Manchester United', awayTeam: 'Arsenal', homeScore: 2, awayScore: 1, date: '2024-05-10', competition: 'Premier League', status: 'result' },
   { id: 'm2', homeTeam: 'Chelsea', awayTeam: 'Manchester United', homeScore: 2, awayScore: 2, date: '2024-05-04', competition: 'Premier League', status: 'result' },
   { id: 'm3', homeTeam: 'Manchester United', awayTeam: 'Bayern Munich', homeScore: 1, awayScore: 0, date: '2024-04-28', competition: 'Champions League', status: 'result' },
   
   // Fixtures
-  { id: 'm4', homeTeam: 'Manchester City', awayTeam: 'Manchester United', date: '2024-05-18T15:00:00Z', competition: 'Premier League', status: 'fixture' },
-  { id: 'm5', homeTeam: 'Manchester United', awayTeam: 'Liverpool', date: '2024-05-25T19:45:00Z', competition: 'FA Cup Final', status: 'fixture' },
-  { id: 'm6', homeTeam: 'Brighton', awayTeam: 'Manchester United', date: '2024-06-02T14:00:00Z', competition: 'Premier League', status: 'fixture' },
+  { id: 'm4', homeTeam: 'Manchester City', awayTeam: 'Manchester United', date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), competition: 'Premier League', status: 'fixture' },
+  { id: 'm5', homeTeam: 'Manchester United', awayTeam: 'Liverpool', date: new Date(Date.now() + 12 * 24 * 60 * 60 * 1000).toISOString(), competition: 'FA Cup Final', status: 'fixture' },
+  { id: 'm6', homeTeam: 'Brighton', awayTeam: 'Manchester United', date: new Date(Date.now() + 18 * 24 * 60 * 60 * 1000).toISOString(), competition: 'Premier League', status: 'fixture' },
 ];
 
 export const forumTopics: ForumTopic[] = [

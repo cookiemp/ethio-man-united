@@ -11,10 +11,12 @@ import {
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowRight } from 'lucide-react';
+import { HeroSection } from '@/components/hero-section';
 
 export default function Home() {
   return (
     <div className="animate-fade-in-up">
+      <HeroSection />
       <h1 className="text-4xl font-bold font-headline mb-8">Latest News</h1>
       <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
         {newsArticles.map((article, index) => (
