@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
-import { Newspaper, MessageCircleWarning, MessageSquare, CheckCircle2 } from 'lucide-react';
+import { Newspaper, MessageCircleWarning, MessageSquare, CheckCircle2, Users } from 'lucide-react';
 import { collection, collectionGroup, query, where } from 'firebase/firestore';
 import type { NewsArticle, ForumPost, Comment } from '@/lib/mock-data';
 
@@ -40,7 +40,7 @@ export default function AdminDashboardPage() {
         {isLoading ? (
           <div className="h-8 w-16 bg-muted animate-pulse rounded-md" />
         ) : (
-          <div className="text-2xl font-bold">{value}</div>
+          <div className="text-2xl font-bold">{value.toLocaleString()}</div>
         )}
         {description && <p className="text-xs text-muted-foreground">{description}</p>}
       </CardContent>
@@ -50,7 +50,14 @@ export default function AdminDashboardPage() {
   return (
     <div className="animate-fade-in-up">
       <h1 className="text-4xl font-bold font-headline mb-8">Admin Dashboard</h1>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+        <StatCard
+          title="Total Site Visits"
+          value={12345}
+          icon={Users}
+          isLoading={false}
+          description="Total visits across the site"
+        />
         <StatCard
           title="Total News Articles"
           value={newsArticles?.length ?? 0}
