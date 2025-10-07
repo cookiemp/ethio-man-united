@@ -13,7 +13,7 @@ import { CalendarIcon, User as UserIcon } from 'lucide-react';
 import { useCollection, useFirebase, useUser, useMemoFirebase } from '@/firebase';
 import { collection, serverTimestamp } from 'firebase/firestore';
 import React, { useState } from 'react';
-import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { addDoc } from 'firebase/firestore';
 import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
 import type { Comment } from '@/lib/mock-data';
 
@@ -28,18 +28,22 @@ function CommentForm({ articleId }: { articleId: string }) {
     }
   };
 
-  const handleSubmitComment = () => {
+  const handleSubmitComment = async () => {
     if (!firestore || !user || !comment.trim()) return;
 
     const commentsRef = collection(firestore, 'news_articles', articleId, 'comments');
-    addDocumentNonBlocking(commentsRef, {
-      content: comment,
-      authorId: user.uid,
-      author: user.isAnonymous ? 'Anonymous Fan' : user.displayName || 'Fan',
-      createdAt: serverTimestamp(),
-      isApproved: false,
-    });
-    setComment('');
+    try {
+      await addDoc(commentsRef, {
+        content: comment,
+        authorId: user.uid,
+        author: user.isAnonymous ? 'Anonymous Fan' : user.displayName || 'Fan',
+        createdAt: serverTimestamp(),
+        isApproved: false,
+      });
+      setComment('');
+    } catch (error) {
+      console.error("Error adding comment: ", error);
+    }
   };
 
   if (isUserLoading) {
@@ -76,7 +80,8 @@ function CommentForm({ articleId }: { articleId: string }) {
 
 // Page component is now async to handle params correctly.
 export default function NewsArticlePage({ params }: { params: { articleId: string } }) {
-  const { articleId } = params;
+  const resolvedParams = React.use(params);
+  const { articleId } = resolvedParams;
   const article = newsArticles.find((a) => a.id === articleId);
   const { firestore } = useFirebase();
 
