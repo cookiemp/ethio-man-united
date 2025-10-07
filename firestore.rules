@@ -1,0 +1,185 @@
+/**
+ * @fileoverview Firestore Security Rules for Commenting Functionality
+ *
+ * Core Philosophy:
+ * This ruleset enforces a hybrid security model. Users can create comments
+ * under news articles and forum posts.
+ * Access to comments is restricted based on a combination of ownership and
+ * approval status.
+ *
+ * Data Structure:
+ * - /news_articles/{newsArticleId}/comments/{commentId}: Comments under news articles.
+ * - /forum_posts/{forumPostId}/comments/{commentId}: Comments under forum posts.
+ *
+ * Key Security Decisions:
+ * - Users can only create comments with `isApproved: false`. Admin approval is required.
+ * - Listing of comments is allowed.
+ *
+ * Denormalization for Authorization:
+ * The 'isApproved' field is included in the Comment entity to allow easy filtering
+ * and authorization without additional `get()` requests.
+ * This simplifies the rules and improves performance.
+ *
+ * Structural Segregation:
+ * Comments are stored in separate subcollections under news articles and forum posts
+ * to allow for tailored security rules and efficient querying.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Controls access to comments under news articles.
+     * @path /news_articles/{newsArticleId}/comments/{commentId}
+     * @allow (create) - Signed-in user can create a comment under a news article with `isApproved: false` and `authorId` matching their UID.
+     * @deny (create) - User attempts to create a comment with `isApproved: true`.
+     * @allow (get, list) - Anyone can read comments.
+     * @allow (update) - Only the author can update an unapproved comment.
+     * @allow (delete) - Only the author can delete an unapproved comment.
+     * @deny (update, delete) - Non-authors attempt to update or delete comments.
+     * @principle Enforces user-ownership and approval requirements for comments.
+     */
+    match /news_articles/{newsArticleId}/comments/{commentId} {
+      // Helper function to check if the user is signed in
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      // Helper function to check if the user is the owner of the comment
+      function isOwner(authorId) {
+        return isSignedIn() && request.auth.uid == authorId;
+      }
+
+      // Helper function to verify existing document ownership
+      function isExistingOwner(authorId) {
+          return isOwner(authorId) && resource != null;
+      }
+
+      // Allow anyone to read comments
+      allow get, list: if true;
+
+      // Only allow signed-in users to create comments with unapproved status
+      allow create: if isSignedIn()
+                      && request.resource.data.authorId == request.auth.uid
+                      && request.resource.data.isApproved == false;
+
+      // Only the author can update an unapproved comment.
+      allow update: if isExistingOwner(resource.data.authorId) && resource.data.isApproved == false;
+
+      // Only the author can delete an unapproved comment.
+      allow delete: if isExistingOwner(resource.data.authorId) && resource.data.isApproved == false;
+    }
+
+    /**
+     * @description Controls access to comments under forum posts.
+     * @path /forum_posts/{forumPostId}/comments/{commentId}
+     * @allow (create) - Signed-in user can create a comment under a forum post with `isApproved: false` and `authorId` matching their UID.
+     * @deny (create) - User attempts to create a comment with `isApproved: true`.
+     * @allow (get, list) - Anyone can read comments.
+     * @allow (update) - Only the author can update an unapproved comment.
+     * @allow (delete) - Only the author can delete an unapproved comment.
+     * @deny (update, delete) - Non-authors attempt to update or delete comments.
+     * @principle Enforces user-ownership and approval requirements for comments.
+     */
+    match /forum_posts/{forumPostId}/comments/{commentId} {
+      // Helper function to check if the user is signed in
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      // Helper function to check if the user is the owner of the comment
+      function isOwner(authorId) {
+        return isSignedIn() && request.auth.uid == authorId;
+      }
+
+      // Helper function to verify existing document ownership
+      function isExistingOwner(authorId) {
+          return isOwner(authorId) && resource != null;
+      }
+
+      // Allow anyone to read comments
+      allow get, list: if true;
+
+      // Only allow signed-in users to create comments with unapproved status
+      allow create: if isSignedIn()
+                      && request.resource.data.authorId == request.auth.uid
+                      && request.resource.data.isApproved == false;
+
+      // Only the author can update an unapproved comment.
+      allow update: if isExistingOwner(resource.data.authorId) && resource.data.isApproved == false;
+
+      // Only the author can delete an unapproved comment.
+      allow delete: if isExistingOwner(resource.data.authorId) && resource.data.isApproved == false;
+    }
+
+     /**
+      * @description Controls access to news articles.
+      * @path /news_articles/{newsArticleId}
+      * @allow (get, list) - Allow public read access to news articles.
+      * @allow (create) - Only allow creation if the authorId matches the authenticated user's ID.
+      * @allow (update, delete) - Only the author can update or delete the news article, and the document must exist.
+      * @deny (create, update, delete) - Default deny for unauthorized write operations.
+      * @principle Public read, owner-only writes.
+      */
+    match /news_articles/{newsArticleId} {
+      // Helper function to check if the user is signed in
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      // Helper function to check if the user is the owner
+      function isOwner(authorId) {
+        return isSignedIn() && request.auth.uid == authorId;
+      }
+
+      // Helper function to verify existing document ownership
+      function isExistingOwner(authorId) {
+          return isOwner(authorId) && resource != null;
+      }
+
+      // Allow public read access to news articles.
+      allow get, list: if true;
+
+      // Only allow creation if the authorId matches the authenticated user's ID.
+      allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
+
+      // Only the author can update or delete the news article, and the document must exist.
+      allow update, delete: if isExistingOwner(resource.data.authorId);
+    }
+
+    /**
+     * @description Controls access to forum posts.
+     * @path /forum_posts/{forumPostId}
+     * @allow (get, list) - Allow public read access to forum posts.
+     * @allow (create) - Only allow creation if the authorId matches the authenticated user's ID. The post must also be created with isApproved = false;
+     * @allow (update, delete) - Only the author can update or delete the forum post, and the document must exist. isApproved must also be false.
+     * @deny (create, update, delete) - Default deny for unauthorized write operations.
+     * @principle Public read, owner-only writes with approval status.
+     */
+    match /forum_posts/{forumPostId} {
+       // Helper function to check if the user is signed in
+        function isSignedIn() {
+            return request.auth != null;
+        }
+
+        // Helper function to check if the user is the owner
+        function isOwner(authorId) {
+            return isSignedIn() && request.auth.uid == authorId;
+        }
+
+       // Helper function to verify existing document ownership
+        function isExistingOwner(authorId) {
+            return isOwner(authorId) && resource != null;
+        }
+
+        // Allow public read access to forum posts.
+        allow get, list: if true;
+
+        // Only allow creation if the authorId matches the authenticated user's ID, and isApproved is false
+        allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid && request.resource.data.isApproved == false;
+
+        // Only the author can update or delete the forum post, and the document must exist, and isApproved is false
+        allow update, delete: if isExistingOwner(resource.data.authorId) && resource.data.isApproved == false;
+    }
+  }
+}

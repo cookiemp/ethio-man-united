@@ -1,0 +1,287 @@
+{
+  "entities": {
+    "NewsArticle": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "NewsArticle",
+      "type": "object",
+      "description": "Represents a news article posted by an admin.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the news article."
+        },
+        "headline": {
+          "type": "string",
+          "description": "The headline of the news article."
+        },
+        "thumbnailUrl": {
+          "type": "string",
+          "description": "URL of the thumbnail image for the article.",
+          "format": "uri"
+        },
+        "content": {
+          "type": "string",
+          "description": "The full content of the news article."
+        },
+        "authorId": {
+          "type": "string",
+          "description": "Reference to the Admin who created the article. (Relationship: Admin 1:N NewsArticle)"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the article was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the article was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "headline",
+        "content",
+        "authorId",
+        "createdAt"
+      ]
+    },
+    "ForumPost": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ForumPost",
+      "type": "object",
+      "description": "Represents a post in the forum.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the forum post."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the forum post."
+        },
+        "content": {
+          "type": "string",
+          "description": "The content of the forum post."
+        },
+        "authorId": {
+          "type": "string",
+          "description": "Reference to the User who created the post. (Relationship: User 1:N ForumPost)"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the post was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the post was last updated.",
+          "format": "date-time"
+        },
+        "isApproved": {
+          "type": "boolean",
+          "description": "Indicates whether the post has been approved by an admin."
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "content",
+        "authorId",
+        "createdAt",
+        "isApproved"
+      ]
+    },
+    "Comment": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Comment",
+      "type": "object",
+      "description": "Represents a comment on a news article or forum post.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the comment."
+        },
+        "content": {
+          "type": "string",
+          "description": "The content of the comment."
+        },
+        "authorId": {
+          "type": "string",
+          "description": "Reference to the User who created the comment. (Relationship: User 1:N Comment)"
+        },
+        "newsArticleId": {
+          "type": "string",
+          "description": "Reference to the NewsArticle this comment belongs to. (Relationship: NewsArticle 1:N Comment)"
+        },
+        "forumPostId": {
+          "type": "string",
+          "description": "Reference to the ForumPost this comment belongs to. (Relationship: ForumPost 1:N Comment)"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the comment was created.",
+          "format": "date-time"
+        },
+        "isApproved": {
+          "type": "boolean",
+          "description": "Indicates whether the comment has been approved by an admin."
+        }
+      },
+      "required": [
+        "id",
+        "content",
+        "authorId",
+        "createdAt",
+        "isApproved"
+      ]
+    },
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user."
+        },
+        "username": {
+          "type": "string",
+          "description": "The username of the user."
+        },
+        "email": {
+          "type": "string",
+          "description": "The email address of the user.",
+          "format": "email"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the user account was created.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "username",
+        "email",
+        "createdAt"
+      ]
+    },
+    "Admin": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Admin",
+      "type": "object",
+      "description": "Represents an administrator of the application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the admin."
+        },
+        "username": {
+          "type": "string",
+          "description": "The username of the admin."
+        },
+        "email": {
+          "type": "string",
+          "description": "The email address of the admin.",
+          "format": "email"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the admin account was created.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "username",
+        "email",
+        "createdAt"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/news_articles/{newsArticleId}",
+        "definition": {
+          "entityName": "NewsArticle",
+          "schema": {
+            "$ref": "#/backend/entities/NewsArticle"
+          },
+          "description": "Represents a news article posted by an admin.",
+          "params": [
+            {
+              "name": "newsArticleId",
+              "description": "The unique identifier for the news article."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/news_articles/{newsArticleId}/comments/{commentId}",
+        "definition": {
+          "entityName": "Comment",
+          "schema": {
+            "$ref": "#/backend/entities/Comment"
+          },
+          "description": "Represents a comment on a news article. Includes the 'newsArticleId' to support QAPs and authorization independence.",
+          "params": [
+            {
+              "name": "newsArticleId",
+              "description": "The unique identifier for the news article."
+            },
+            {
+              "name": "commentId",
+              "description": "The unique identifier for the comment."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/forum_posts/{forumPostId}",
+        "definition": {
+          "entityName": "ForumPost",
+          "schema": {
+            "$ref": "#/backend/entities/ForumPost"
+          },
+          "description": "Represents a post in the forum.",
+          "params": [
+            {
+              "name": "forumPostId",
+              "description": "The unique identifier for the forum post."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/forum_posts/{forumPostId}/comments/{commentId}",
+        "definition": {
+          "entityName": "Comment",
+          "schema": {
+            "$ref": "#/backend/entities/Comment"
+          },
+          "description": "Represents a comment on a forum post. Includes the 'forumPostId' to support QAPs and authorization independence.",
+          "params": [
+            {
+              "name": "forumPostId",
+              "description": "The unique identifier for the forum post."
+            },
+            {
+              "name": "commentId",
+              "description": "The unique identifier for the comment."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "To support the commenting functionality for both News Articles and Forum Posts, and to ensure secure and scalable access, I recommend the following Firestore structure:\n\n1.  **Comments as Subcollections:** Store comments as subcollections under both `news_articles` and `forum_posts`. This provides clear hierarchical ownership and makes querying comments for a specific article or post efficient. Specifically `/news_articles/{newsArticleId}/comments/{commentId}` and `/forum_posts/{forumPostId}/comments/{commentId}`\n\n2. **Authorization Independence:** The data structure uses path-based ownership and avoids `get()` calls in security rules. Specifically, comments are nested under either the NewsArticle or ForumPost. This eliminates the need to fetch parent document data to authorize access to comments. Since posts and comments require admin approval (`isApproved` field), this boolean field is present on both posts and comments which provides Authorization Independence.\n\n3.  **Structural Segregation:** The data is segregated by type of parent post (NewsArticle or ForumPost) into separate subcollections. This ensures security rules can be narrowly tailored to each type of content. Both paths `/news_articles/{newsArticleId}/comments/{commentId}` and `/forum_posts/{forumPostId}/comments/{commentId}` benefit from Structural Segregation.\n\n4.  **Access Modeling:** Comments are owned by users based on the `/news_articles/{newsArticleId}/comments/{commentId}` and `/forum_posts/{forumPostId}/comments/{commentId}` structures. Admins are authorized to manage content due to the `isApproved` field. Both the path-based ownership and the `isApproved` field enable us to secure the system by defining a predictable security posture. These hierarchical structures enable easy querying of comments for a given article or post. This structure aligns to the **Hierarchical Paths for User-Owned Data** principle. No Membership Maps are necessary, but if they were, the structure would have supported that use case.\n\n5.  **QAPs (Rules are not Filters):** This structure enables secure `list` operations. We can filter comments by post/article without needing to `get()` data from other locations in the database. In other words, we can write rules such as `allow list: if resource.data().newsArticleId == newsArticleId`"
+  }
+}
