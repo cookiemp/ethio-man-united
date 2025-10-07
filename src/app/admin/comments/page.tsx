@@ -14,7 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Check, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import type { Comment } from '@/lib/mock-data';
-import { collectionGroup, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collectionGroup, doc, updateDoc, deleteDoc, getDoc, DocumentReference } from 'firebase/firestore';
 
 export default function AdminCommentsPage() {
   const { firestore } = useFirebase();
@@ -26,33 +26,18 @@ export default function AdminCommentsPage() {
   
   const { data: comments, isLoading } = useCollection<Comment>(commentsQuery);
 
-  const handleApprove = async (comment: Comment & { parentPath?: string }) => {
-    if (!firestore || !comment.parentPath) return;
-    const commentRef = doc(firestore, comment.parentPath, comment.id);
-    await updateDoc(commentRef, { isApproved: true });
+  const handleApprove = async (comment: Comment & { ref?: DocumentReference }) => {
+    if (!firestore || !comment.ref) return;
+    await updateDoc(comment.ref, { isApproved: true });
   };
 
-  const handleRemove = async (comment: Comment & { parentPath?: string }) => {
-    if (!firestore || !comment.parentPath) return;
-    const commentRef = doc(firestore, comment.parentPath, comment.id);
-    await deleteDoc(commentRef);
+  const handleRemove = async (comment: Comment & { ref?: DocumentReference }) => {
+    if (!firestore || !comment.ref) return;
+    await deleteDoc(comment.ref);
   };
-  
-  // This is a temporary way to get the parent path until we have a better way
-  const getParentPath = (comment: any) : string | undefined => {
-    // This is a hacky way to get the parent path but it works for now
-    if (comment.ref?.path) {
-      const pathParts = comment.ref.path.split('/');
-      if (pathParts.length > 2) {
-        return pathParts.slice(0, -1).join('/');
-      }
-    }
-    return undefined;
-  }
 
   const sortedComments = comments
-    ?.map(c => ({...c, parentPath: getParentPath(c)}))
-    .sort((a, b) => {
+    ?.sort((a, b) => {
       const aDate = (a.createdAt as any)?.toDate?.() || 0;
       const bDate = (b.createdAt as any)?.toDate?.() || 0;
       return bDate - aDate;
@@ -85,7 +70,7 @@ export default function AdminCommentsPage() {
               {!isLoading && sortedComments?.map((comment) => (
                 <TableRow key={comment.id}>
                   <TableCell className="text-muted-foreground">{comment.content}</TableCell>
-                  <TableCell className="font-medium">{comment.author || 'Anonymous'}</TableCell>
+                  <TableCell className="font-medium">{(comment as any).author || 'Anonymous'}</TableCell>
                   <TableCell>
                     {comment.isApproved ? (
                        <Badge variant="default" className="bg-green-600">Approved</Badge>
