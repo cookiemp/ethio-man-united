@@ -2,7 +2,6 @@ import { matches } from '@/lib/mock-data';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { FootballIcon } from '@/components/icons/football-icon';
 
 export default function FixturesPage() {
   const upcomingFixtures = matches.filter((m) => m.status === 'fixture');
@@ -19,7 +18,6 @@ export default function FixturesPage() {
       <CardContent>
         <div className="flex items-center justify-around text-center">
           <div className="flex-1 flex flex-col items-center gap-2">
-            <FootballIcon className="h-10 w-10 text-muted-foreground" />
             <span className="font-semibold text-lg">{match.homeTeam}</span>
           </div>
           <div className="px-4">
@@ -30,7 +28,6 @@ export default function FixturesPage() {
             )}
           </div>
           <div className="flex-1 flex flex-col items-center gap-2">
-            <FootballIcon className="h-10 w-10 text-muted-foreground" />
             <span className="font-semibold text-lg">{match.awayTeam}</span>
           </div>
         </div>

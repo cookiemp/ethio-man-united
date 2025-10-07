@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { Match, matches } from '@/lib/mock-data';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { FootballIcon } from './icons/football-icon';
 
 export function HeroSection() {
   const [liveMatch] = useState<Match | undefined>(matches.find((m) => m.status === 'live'));
@@ -70,14 +69,12 @@ export function HeroSection() {
               </div>
               <div className="flex items-center justify-around w-full max-w-2xl text-center">
                 <div className="flex-1 flex flex-col items-center gap-3">
-                  <FootballIcon className="h-12 w-12 text-foreground" />
                   <span className="font-bold text-2xl">{liveMatch.homeTeam}</span>
                 </div>
                 <div className="px-6">
                   <p className="text-5xl font-bold font-headline">{`${liveMatch.homeScore} - ${liveMatch.awayScore}`}</p>
                 </div>
                 <div className="flex-1 flex flex-col items-center gap-3">
-                  <FootballIcon className="h-12 w-12 text-foreground" />
                   <span className="font-bold text-2xl">{liveMatch.awayTeam}</span>
                 </div>
               </div>
