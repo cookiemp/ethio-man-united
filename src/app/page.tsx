@@ -46,37 +46,37 @@ export default function Home() {
               </Link>
             </Button>
           </div>
-          <Card className="grid md:grid-cols-2 overflow-hidden transition-shadow hover:shadow-lg">
-            <div className="relative h-64 md:h-auto">
-               <Image
-                  src={latestArticle.thumbnailUrl}
-                  alt={latestArticle.headline}
-                  fill
-                  style={{ objectFit: 'cover' }}
-                  data-ai-hint={latestArticle.thumbnailHint}
-                  priority
-                />
-            </div>
-            <div className="flex flex-col p-6">
-              <CardHeader className="p-0">
-                <CardTitle className="font-headline text-2xl mb-2 leading-tight">
-                  {latestArticle.headline}
-                </CardTitle>
-                 <Badge variant="secondary" className="w-fit">{new Date(latestArticle.date).toLocaleDateString()}</Badge>
-              </CardHeader>
-              <CardContent className="p-0 pt-4 flex-grow">
-                <p className="text-muted-foreground">{latestArticle.story.substring(0, 150)}...</p>
-              </CardContent>
-              <CardFooter className="p-0 pt-6">
-                 <Button asChild>
-                   <Link href="/news">
-                    Read More
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Link>
-                 </Button>
-              </CardFooter>
-            </div>
-          </Card>
+          <Link href={`/news/${latestArticle.id}`} className="block group">
+            <Card className="grid md:grid-cols-2 overflow-hidden transition-shadow hover:shadow-lg">
+              <div className="relative h-64 md:h-auto">
+                 <Image
+                    src={latestArticle.thumbnailUrl}
+                    alt={latestArticle.headline}
+                    fill
+                    style={{ objectFit: 'cover' }}
+                    data-ai-hint={latestArticle.thumbnailHint}
+                    priority
+                  />
+              </div>
+              <div className="flex flex-col p-6">
+                <CardHeader className="p-0">
+                  <CardTitle className="font-headline text-2xl mb-2 leading-tight group-hover:text-primary">
+                    {latestArticle.headline}
+                  </CardTitle>
+                   <Badge variant="secondary" className="w-fit">{new Date(latestArticle.date).toLocaleDateString()}</Badge>
+                </CardHeader>
+                <CardContent className="p-0 pt-4 flex-grow">
+                  <p className="text-muted-foreground">{latestArticle.story.substring(0, 150)}...</p>
+                </CardContent>
+                <CardFooter className="p-0 pt-6">
+                   <div className="flex items-center text-primary font-semibold text-sm">
+                      Read More
+                      <ArrowRight className="h-4 w-4 ml-1 transition-transform group-hover:translate-x-1" />
+                    </div>
+                </CardFooter>
+              </div>
+            </Card>
+          </Link>
         </section>
       )}
 
