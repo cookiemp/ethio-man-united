@@ -7,7 +7,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 
 export const metadata: Metadata = {
-  title: 'Red Devils Hub',
+  title: 'Ethio Man United',
   description: 'The ultimate fan community for Manchester United supporters.',
 };
 

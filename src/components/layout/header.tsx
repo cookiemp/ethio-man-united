@@ -42,7 +42,7 @@ export function Header() {
         <Link href="/" className="mr-6 flex items-center space-x-2">
           <Logo className="h-8 w-8 text-primary" />
           <span className="font-bold font-headline text-lg hidden sm:inline-block">
-            Red Devils Hub
+            Ethio Man United
           </span>
         </Link>
         <nav className="hidden flex-1 items-center space-x-6 md:flex">

@@ -3,7 +3,7 @@ export function Footer() {
     <footer className="border-t">
       <div className="container flex items-center justify-center h-16">
         <p className="text-sm text-muted-foreground">
-          &copy; {new Date().getFullYear()} Red Devils Hub. All Rights Reserved.
+          &copy; {new Date().getFullYear()} Ethio Man United. All Rights Reserved.
         </p>
       </div>
     </footer>
