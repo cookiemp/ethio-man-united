@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,10 +15,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Check, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import type { Comment } from '@/lib/mock-data';
-import { collectionGroup, doc, updateDoc, deleteDoc, getDoc, DocumentReference } from 'firebase/firestore';
+import { collectionGroup, DocumentReference } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
 
 export default function AdminCommentsPage() {
   const { firestore } = useFirebase();
+  const { toast } = useToast();
+  const [loadingCommentId, setLoadingCommentId] = useState<string | null>(null);
 
   const commentsQuery = useMemoFirebase(
     () => (firestore ? collectionGroup(firestore, 'comments') : null),
@@ -26,14 +30,111 @@ export default function AdminCommentsPage() {
   
   const { data: comments, isLoading } = useCollection<Comment>(commentsQuery);
 
+  // Extract parent type and ID from document reference path
+  const getCommentPath = (comment: Comment & { ref?: DocumentReference }) => {
+    if (!comment.ref) return null;
+    
+    // Path format: "news_articles/{id}/comments/{commentId}" or "forum_posts/{id}/comments/{commentId}"
+    const pathParts = comment.ref.path.split('/');
+    if (pathParts.length !== 4) return null;
+    
+    return {
+      parentType: pathParts[0], // 'news_articles' or 'forum_posts'
+      parentId: pathParts[1],
+      commentId: pathParts[3]
+    };
+  };
+
   const handleApprove = async (comment: Comment & { ref?: DocumentReference }) => {
-    if (!firestore || !comment.ref) return;
-    await updateDoc(comment.ref, { isApproved: true });
+    const pathInfo = getCommentPath(comment);
+    if (!pathInfo) {
+      toast({
+        title: 'Error',
+        description: 'Unable to determine comment path',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setLoadingCommentId(comment.id);
+
+    try {
+      const response = await fetch(`/api/admin/comments/${pathInfo.commentId}/approve`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          parentType: pathInfo.parentType,
+          parentId: pathInfo.parentId,
+        }),
+      });
+
+      if (response.ok) {
+        toast({
+          title: 'Success',
+          description: 'Comment approved successfully',
+        });
+      } else {
+        const data = await response.json();
+        toast({
+          title: 'Error',
+          description: data.error || 'Failed to approve comment',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      console.error('Error approving comment:', error);
+      toast({
+        title: 'Error',
+        description: 'An unexpected error occurred',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingCommentId(null);
+    }
   };
 
   const handleRemove = async (comment: Comment & { ref?: DocumentReference }) => {
-    if (!firestore || !comment.ref) return;
-    await deleteDoc(comment.ref);
+    const pathInfo = getCommentPath(comment);
+    if (!pathInfo) {
+      toast({
+        title: 'Error',
+        description: 'Unable to determine comment path',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setLoadingCommentId(comment.id);
+
+    try {
+      const response = await fetch(
+        `/api/admin/comments/${pathInfo.commentId}/delete?parentType=${pathInfo.parentType}&parentId=${pathInfo.parentId}`,
+        { method: 'DELETE' }
+      );
+
+      if (response.ok) {
+        toast({
+          title: 'Success',
+          description: 'Comment deleted successfully',
+        });
+      } else {
+        const data = await response.json();
+        toast({
+          title: 'Error',
+          description: data.error || 'Failed to delete comment',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+      toast({
+        title: 'Error',
+        description: 'An unexpected error occurred',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingCommentId(null);
+    }
   };
 
   const sortedComments = comments
@@ -81,16 +182,34 @@ export default function AdminCommentsPage() {
                   <TableCell className="text-right">
                     {!comment.isApproved && (
                       <>
-                        <Button variant="ghost" size="icon" className="text-green-600 hover:text-green-600" onClick={() => handleApprove(comment)}>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="text-green-600 hover:text-green-600" 
+                          onClick={() => handleApprove(comment)}
+                          disabled={loadingCommentId === comment.id}
+                        >
                           <Check className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleRemove(comment)}>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="text-destructive hover:text-destructive" 
+                          onClick={() => handleRemove(comment)}
+                          disabled={loadingCommentId === comment.id}
+                        >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </>
                     )}
                      {comment.isApproved && (
-                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleRemove(comment)}>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="text-destructive hover:text-destructive" 
+                          onClick={() => handleRemove(comment)}
+                          disabled={loadingCommentId === comment.id}
+                        >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                      )}

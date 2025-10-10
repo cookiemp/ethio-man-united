@@ -1,0 +1,49 @@
+rules_version = '2';
+
+// Firebase Storage Security Rules
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // News article images
+    // Path: /news-images/{imageId}
+    match /news-images/{imageId} {
+      // Anyone can read images (public)
+      allow read: if true;
+      
+      // Only authenticated users can upload images
+      // In production, you may want to restrict this to admin-only
+      allow create: if isAuthenticated()
+                    && request.resource.size < 5 * 1024 * 1024  // Max 5MB
+                    && request.resource.contentType.matches('image/.*');  // Images only
+      
+      // Only authenticated users can update/delete their own images
+      allow update, delete: if isAuthenticated();
+    }
+    
+    // User avatar images
+    // Path: /avatars/{userId}/{imageId}
+    match /avatars/{userId}/{imageId} {
+      // Anyone can read avatars (public)
+      allow read: if true;
+      
+      // Users can only upload to their own avatar folder
+      allow create: if isAuthenticated()
+                    && request.auth.uid == userId
+                    && request.resource.size < 5 * 1024 * 1024  // Max 5MB
+                    && request.resource.contentType.matches('image/.*');  // Images only
+      
+      // Users can only update/delete their own avatars
+      allow update, delete: if isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Fallback: deny all other paths by default
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

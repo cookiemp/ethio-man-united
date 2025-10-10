@@ -3,12 +3,16 @@ import { Timestamp } from "firebase/firestore";
 export type NewsArticle = {
   id: string;
   headline: string;
-  thumbnailUrl: string;
-  thumbnailHint: string;
-  story: string;
-  author: string;
-  date: string;
-  comments: Comment[];
+  thumbnailUrl?: string;
+  thumbnailHint?: string;
+  story?: string;
+  content?: string;  // Firestore uses 'content' instead of 'story'
+  author?: string;
+  authorId?: string;
+  date?: string;
+  createdAt?: Timestamp | Date | any;  // Firestore serverTimestamp
+  updatedAt?: Timestamp | Date | any;
+  comments?: Comment[];
 };
 
 export type Match = {

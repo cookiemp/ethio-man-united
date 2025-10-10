@@ -5,15 +5,16 @@ import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Logo } from "@/components/icons/logo";
+import { UserMenu } from "@/components/auth/user-menu";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
-import { Menu, Newspaper, Calendar, MessagesSquare, Shield, Home as HomeIcon } from "lucide-react";
+import { Menu, Newspaper, Calendar, MessagesSquare, Home as HomeIcon } from "lucide-react";
 
 const navLinks = [
   { href: "/", label: "Home", icon: HomeIcon },
   { href: "/news", label: "News", icon: Newspaper },
   { href: "/fixtures", label: "Fixtures", icon: Calendar },
   { href: "/forum", label: "Forum", icon: MessagesSquare },
-  { href: "/admin", label: "Admin", icon: Shield },
 ];
 
 export function Header() {
@@ -48,7 +49,12 @@ export function Header() {
         <nav className="hidden flex-1 items-center space-x-6 md:flex">
           {navLinks.map((link) => renderLink(link))}
         </nav>
-        <div className="flex flex-1 items-center justify-end md:hidden">
+        <div className="hidden md:flex items-center gap-2">
+          <ThemeToggle />
+          <UserMenu />
+        </div>
+        <div className="flex flex-1 items-center justify-end gap-2 md:hidden">
+          <ThemeToggle />
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon">

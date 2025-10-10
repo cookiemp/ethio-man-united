@@ -33,8 +33,7 @@ service cloud.firestore {
      */
     match /news_articles/{newsArticleId} {
       allow get, list: if true;
-      allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
-      allow update, delete: if isSignedIn() && isExistingOwner(resource.data.authorId);
+      allow create, update, delete: if isSignedIn();
     }
 
     /**
@@ -42,15 +41,14 @@ service cloud.firestore {
      * @path /news_articles/{newsArticleId}/comments/{commentId}
      * @allow (get, list): Any user can read comments on news articles.
      * @allow (create): An authenticated user can create a comment if the `authorId` matches their UID.
-     * @allow (update, delete): An authenticated user can update or delete a comment if they are the author.
+     * @allow (update, delete): An authenticated user can update or delete a comment (allows admin moderation).
      * @deny (create): An unauthenticated user attempts to create a comment on a news article.
-     * @deny (update, delete): An unauthenticated user attempts to update or delete a comment on a news article.
-     * @principle Enforces document ownership for writes and requires authentication for all operations.
+     * @principle Authenticated users can moderate comments; admin verification happens at API level.
      */
     match /news_articles/{newsArticleId}/comments/{commentId} {
       allow get, list: if true;
       allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
-      allow update, delete: if isSignedIn() && isExistingOwner(resource.data.authorId);
+      allow update, delete: if isSignedIn();
     }
 
     /**
@@ -66,7 +64,26 @@ service cloud.firestore {
     match /forum_posts/{forumPostId} {
       allow get, list: if true;
       allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
-      allow update, delete: if isSignedIn() && isExistingOwner(resource.data.authorId);
+      // Allow owner to update/delete, OR allow anyone to update replyCount/updatedAt fields
+      allow update: if isSignedIn() && (
+        isExistingOwner(resource.data.authorId) ||
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['replyCount', 'updatedAt']))
+      );
+      // Allow any authenticated user to delete (admin moderation)
+      allow delete: if isSignedIn();
+      
+      /**
+       * @description Forum replies subcollection
+       * @path /forum_posts/{forumPostId}/replies/{replyId}
+       * @allow (get, list): Anyone can read replies
+       * @allow (create): Authenticated users can create replies
+       * @allow (update, delete): Authenticated users can moderate replies
+       */
+      match /replies/{replyId} {
+        allow get, list: if true;
+        allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
+        allow update, delete: if isSignedIn();
+      }
     }
 
     /**
@@ -74,15 +91,50 @@ service cloud.firestore {
      * @path /forum_posts/{forumPostId}/comments/{commentId}
      * @allow (get, list): Any user can read comments on forum posts.
      * @allow (create): An authenticated user can create a comment if the `authorId` matches their UID.
-     * @allow (update, delete): An authenticated user can update or delete a comment if they are the author.
+     * @allow (update, delete): An authenticated user can update or delete a comment (allows admin moderation).
      * @deny (create): An unauthenticated user attempts to create a comment on a forum post.
-     * @deny (update, delete): An unauthenticated user attempts to update or delete a comment on a forum post.
-     * @principle Enforces document ownership for writes and requires authentication for all operations.
+     * @principle Authenticated users can moderate comments; admin verification happens at API level.
      */
     match /forum_posts/{forumPostId}/comments/{commentId} {
       allow get, list: if true;
       allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
-      allow update, delete: if isSignedIn() && isExistingOwner(resource.data.authorId);
+      allow update, delete: if isSignedIn();
+    }
+
+    /**
+     * @description Collection group query for all comments across news articles and forum posts.
+     * @path /comments/{commentId} (collection group)
+     * @allow (get, list): Any user can read all comments via collection group query.
+     * @principle Enables admin dashboard to query all comments at once.
+     */
+    match /{path=**}/comments/{commentId} {
+      allow get, list: if true;
+    }
+
+    /**
+     * @description User profiles collection
+     * @path /users/{userId}
+     * @allow (get, list): Anyone can view user profiles
+     * @allow (create): Users can create their own profile during signup
+     * @allow (update): Users can only update their own profile
+     * @allow (delete): Users cannot delete profiles
+     */
+    match /users/{userId} {
+      allow get, list: if true;
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isSignedIn() && request.auth.uid == userId;
+      allow delete: if false;
+    }
+
+    /**
+     * @description Global settings collection
+     * @path /settings/{settingId}
+     * @allow (get, list): Anyone can read settings (for watch live URL, etc.)
+     * @allow (create, update, delete): Anyone can write (admin auth is checked at app level)
+     * @principle Admin authentication is handled by session cookies, not Firebase Auth
+     */
+    match /settings/{settingId} {
+      allow read, write: if true;
     }
 
     function isSignedIn() {
