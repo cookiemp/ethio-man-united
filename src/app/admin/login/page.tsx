@@ -52,7 +52,7 @@ export default function AdminLoginPage() {
         {/* Logo and Title */}
         <div className="text-center space-y-2">
           <div className="flex justify-center mb-4">
-            <Logo className="h-16 w-16 text-primary" />
+            <Logo width={64} height={64} className="rounded-full" />
           </div>
           <h1 className="text-3xl font-bold font-headline tracking-tight">
             Ethio Man United

@@ -12,10 +12,10 @@ export const metadata: Metadata = {
   description: 'The ultimate fan community for Manchester United supporters.',
   icons: {
     icon: [
-      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/icon.png', type: 'image/png' },
     ],
-    shortcut: '/favicon.svg',
-    apple: '/favicon.svg',
+    shortcut: '/icon.png',
+    apple: '/icon.png',
   },
 };
 
