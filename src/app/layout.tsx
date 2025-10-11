@@ -10,13 +10,6 @@ import { ThemeProvider } from '@/components/theme-provider';
 export const metadata: Metadata = {
   title: 'Ethio Man United',
   description: 'The ultimate fan community for Manchester United supporters.',
-  icons: {
-    icon: [
-      { url: '/icon.png', type: 'image/png' },
-    ],
-    shortcut: '/icon.png',
-    apple: '/icon.png',
-  },
 };
 
 export default function RootLayout({
